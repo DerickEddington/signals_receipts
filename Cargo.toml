@@ -1,0 +1,89 @@
+[package]
+name = "signals_receipts"
+description = "Simple exfiltration of the receipt of POSIX signals."
+version = "0.1.0"
+authors = ["Derick Eddington"]
+edition = "2021"
+rust-version = "1.76"
+keywords = ["signals", "posix", "unix", "no_std"]
+categories = ["concurrency", "os::unix-apis", "no-std::no-alloc"]
+license = "Unlicense"
+repository = "https://app.radicle.xyz/nodes/ash.radicle.garden/rad:zEuRtz1NEa1AAcsDpE7NowDo3m6j"
+readme = "README.md"
+
+[dependencies]
+# This crate's types are intentionally exposed in the public API.
+sem_safe = { version = "0.1.0" }
+# These crates are only internal implementation details that could be replaced with others that
+# provide equivalent capabilities as needed.
+cfg-if = "1.0.0"
+errno = { version = "0.3.8", default-features = false }
+libc = { version = "0.2.155", default-features = false }
+
+[lints.rust]
+unsafe_code =                     "deny"  # It's allowed and used in some necessary places.
+unstable_features =               "forbid"
+# Warn about desired lints that would otherwise be allowed by default.
+# Groups
+future_incompatible =             { level = "warn", priority = -1 }
+nonstandard_style =               { level = "warn", priority = -1 }
+rust_2018_compatibility =         { level = "warn", priority = -1 }
+rust_2018_idioms =                { level = "warn", priority = -1 }
+rust_2021_compatibility =         { level = "warn", priority = -1 }
+unused =                          { level = "warn", priority = -1 }
+# Individual lints not included in above groups and desired.
+let_underscore_drop =             "warn"
+macro_use_extern_crate =          "warn"
+meta_variable_misuse =            "warn"
+missing_copy_implementations =    "warn"
+missing_debug_implementations =   "warn"
+missing_docs =                    "warn"
+#missing_doc_code_examples =      "warn"  # maybe someday
+redundant_lifetimes =             "warn"
+single_use_lifetimes =            "warn"
+trivial_casts =                   "warn"
+trivial_numeric_casts =           "warn"
+unit_bindings =                   "warn"
+unnameable_types =                "warn"
+unreachable_pub =                 "warn"
+unused_crate_dependencies =       "warn"
+unused_extern_crates =            "warn"
+unused_import_braces =            "warn"
+unused_lifetimes =                "warn"
+unused_macro_rules =              "warn"
+unused_qualifications =           "warn"
+variant_size_differences =        "warn"
+
+[lints.clippy]
+# Groups
+pedantic =                         { level = "warn", priority = -1 }
+restriction =                      { level = "warn", priority = -1 }
+cargo =                            { level = "warn", priority = -1 }
+# Exclude (re-allow) undesired lints included in above groups.
+absolute_paths =                   "allow"
+blanket_clippy_restriction_lints = "allow"
+default_numeric_fallback =         "allow"
+deref_by_slicing =                 "allow"
+disallowed_script_idents =         "allow"
+impl_trait_in_params =             "allow"
+implicit_return =                  "allow"
+integer_division_remainder_used =  "allow"
+min_ident_chars =                  "allow"
+missing_docs_in_private_items =    "allow"
+missing_trait_methods =            "allow"
+module_name_repetitions =          "allow"
+non_ascii_literal =                "allow"
+pattern_type_mismatch =            "allow"
+pub_use =                          "allow"
+pub_with_shorthand =               "allow"
+question_mark_used =               "allow"
+redundant_else =                   "allow"
+self_named_module_files =          "allow"
+semicolon_outside_block =          "allow"
+separated_literal_suffix =         "allow"
+single_call_fn =                   "allow"
+single_char_lifetime_names =       "allow"
+shadow_reuse =                     "allow"
+
+[lints.rustdoc]
+private_doc_tests =               "warn"
