@@ -87,7 +87,7 @@ mod sigaction {
             let sa_flags = it.sa_flags_mut_ptr();
             // SAFETY: `sa_flags` is valid, aligned, unaliased, and uninitialized.
             unsafe {
-                sa_flags.write(0); // Ensure that Rust considers this field initialized.
+                sa_flags.write(0); // Ensure that Rust considers this as written to.
             }
 
             it

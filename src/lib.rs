@@ -93,7 +93,8 @@ pub extern "C" fn handler<const SIGNUM: SignalNumber, T: SignalReceipt<SIGNUM>>(
                 // semaphore have a very-high positive value when doing `sem_wait()` and so it
                 // won't block and will continue to process the receipts.
             } else {
-                // Impossible. Unreachable. But `unreachable!()` can't be used, because panicking
+                // Impossible - `sem_safe` ensures the semaphores are valid. Unreachable. But
+                // `unreachable!()` can't be used, because panicking
                 // is not async-signal-safe.
                 abort(b"`sem_post()` errored!");
             }
@@ -200,7 +201,7 @@ pub fn consume_loop<B, C>(
 
         // Prevent this thread from handling the application's signals, so that it's more
         // efficient at making progress on processing their receipts.  This seems to be helpful
-        // when very many signals are incoming.  Also, this prevents `EINTR` of `sem_wait()`
+        // when very many signals are incoming.  Also, this prevents `EINTR` of our `sem_wait()`
         // (which can be handled (see below) such that our loop would still work, but that isn't
         // quite as simple).
         mask_all_signals_of_current_thread();

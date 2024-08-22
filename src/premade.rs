@@ -32,6 +32,8 @@ pub trait Premade: Sealed {
     fn continue_flag() -> &'static AtomicBool;
 
     /// Get the reference to our semaphore.
+    ///
+    /// This is async-signal-safe, and so it's safe for this to be called from a signal handler.
     fn semaphore() -> Pin<&'static Semaphore>;
 
     /// Do [`install_handler()`](crate::install_handler) for all of the declared signal numbers.
@@ -130,12 +132,13 @@ pub trait Premade: Sealed {
                     // semaphore have a very-high positive value when doing `sem_wait()` and so it
                     // won't block and will continue to process the false continue-flag.
                 } else {
-                    unreachable!(); // Impossible.
+                    unreachable!(); // Impossible - `sem_safe` ensures the semaphores are valid.
                 }
             }
         } else {
             // Our semaphore wasn't already initialized and couldn't be quickly.  This is very
-            // unlikely, and there's nothing we can do, but at least we did set the continue-flag.
+            // unlikely, and there's nothing we can do, but at least we did change the
+            // continue-flag.
         }
     }
 }

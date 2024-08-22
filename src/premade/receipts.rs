@@ -15,8 +15,8 @@ use core::{cmp::Ordering, mem, ops::ControlFlow};
 pub struct Receipt<U, B = (), C = ()> {
     /// Signal number that was received.
     pub sig_num:   SignalNumber,
-    /// Current count of how many times the signal designated by `sig_num` was received, as of
-    /// when its consuming was run (which usually was very recently).
+    /// Current count of how many times the signal designated by `sig_num` was received since
+    /// last time its consuming was run.
     pub cur_count: U,
     /// Control whether the processing of subsequent receipts will continue or finish after the
     /// current delegate (which is processing this instance) returns.

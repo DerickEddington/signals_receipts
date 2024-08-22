@@ -1,6 +1,7 @@
 # `signals_receipts`
 
-A simple, lightweight, async-signal-safe, and portable approach to handling POSIX signals.
+An approach to handling POSIX signals that is simple, lightweight, async-signal-safe, and
+portable.
 
 Each signal number of interest is associated with: an atomic counter of how many times that signal
 has been delivered since it was last checked, and your custom processing for that signal.  A
@@ -37,9 +38,13 @@ Not for when multiple delegates per signal number is needed (though, you could m
 that with this crate).  Not for supporting Windows.  Having any of those abilities would be too
 involved for this crate.
 
-Using [POSIX Semaphores](https://crates.io/crates/sem_safe), which this crate does, is simpler and
-cleaner than the classic "self-pipe trick" (which the `signal_hook` crate uses for its iterator),
-for waking a consumer thread from within an extremely-limited signal handler.
+Using [POSIX Semaphores](https://crates.io/crates/sem_safe), which this crate does, is a little
+simpler and cleaner than the classic "self-pipe trick" (which the `signal_hook` crate uses for its
+iterator), for waking a consumer thread from within an extremely-limited signal handler.  (The
+"self-pipe trick" is: `write()` to a pipe is done from a signal handler, and blocking `read()`
+from the other end of the pipe is done from the consumer thread.  That is somewhat messier (due to
+needing to: setup the pipes, close-on-exec, non-blocking writes, and make the ends accessible to
+the threads).)
 
 The other classic approach of using `sigwait` (or one of its variants) from a consumer thread, to
 avoid async-signal handlers altogether, is sometimes too undesirable because of its requirement to
@@ -49,7 +54,7 @@ their programs, unless carefully reset for each).  This crate is suitable for wh
 is not done, i.e. for when async-signal handlers are used.
 
 This crate exposes as public some of its mechanisms, in case they're useful for you to customize
-your approach to be somewhat different than this crate's premade approach.
+your use to be somewhat different than this crate's `premade` macro's choices.
 
 # Alternative
 
@@ -58,7 +63,9 @@ abilities, for being so limited by async-signal-safety.  Its iterator over incom
 simple to initialize and use across threads, and using only that is sometimes sufficient.  It can
 provide the extra info of `SA_SIGINFO`.  A reason to not use `signal_hook` is when having its full
 suite of abilities, but mostly unused, would definitely be overkill.  If you're not sure it would
-be overkill, you might want to choose `signal_hook` instead.
+be overkill, you might want to choose `signal_hook` instead.  But another reason to use
+`signals_receipts` is that it can fully uninstall the signal handlers, whereas `signal_hook` can't
+do that (it can only emulate that mostly).
 
 # Portability
 
@@ -75,8 +82,9 @@ This crate was confirmed to build and pass its tests and examples on (x86_64 onl
 - Solaris
   - OpenIndiana 2024.04
 
-It might already work on further POSIX OSs.  If not, adding support for other POSIX OSs should be
-easy but might require making tweaks to this crate's conditional compilation.
+All glibc- or musl-based Linux OSs should already work.  It might already work on further POSIX
+OSs.  If not, adding support for other POSIX OSs should be easy but might require making tweaks to
+this crate's conditional compilation.
 
 ### macOS Unsupported
 

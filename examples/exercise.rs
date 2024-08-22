@@ -18,8 +18,8 @@ signals_receipts::premade! {
 
      #[derive(Default)]
      pub(crate) struct Accum {
-         alarms_count: Saturating<u64>,
-         hyper_count:  Saturating<u128>,
+         alarm_count: Saturating<u64>,
+         hyper_count: Saturating<u128>,
      }
     )
 
@@ -31,13 +31,13 @@ signals_receipts::premade! {
     // async-signal-safety.
 
     {callback} => |accum| {
-        // println!("Loop Iteration ({} alarms, {} usr2)", accum.alarms_count, accum.hyper_count);
+        // println!("Loop Iteration ({} alarm, {} urg)", accum.alarm_count, accum.hyper_count);
         ControlFlow::Continue(accum)
     };
     SIGALRM => |receipt| {
         println!("Alarm ({})", receipt.cur_count);
         set_alarm();  // An alarm only triggers once, so reset each time.
-        receipt.update_accum(|a| a.alarms_count += 1);
+        receipt.update_accum(|a| a.alarm_count += 1);
     };
     SIGINT => |receipt| {
         println!("Interrupt ({})", receipt.cur_count);
@@ -53,8 +53,8 @@ signals_receipts::premade! {
     SIGURG => |receipt| receipt.get_accum_mut().hyper_count += 1;
     SIGQUIT => |receipt| {
         let accum = receipt.take_accum();
-        receipt.break_loop_with(format!("Done (had: {} alarms, {} usr2)",
-                                        accum.alarms_count, accum.hyper_count));
+        receipt.break_loop_with(format!("Done (had: {} alarm, {} urg)",
+                                        accum.alarm_count, accum.hyper_count));
     };
     SIGTERM => |receipt| {
         println!("Terminate ({})", receipt.cur_count);
