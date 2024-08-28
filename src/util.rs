@@ -359,9 +359,10 @@ pub fn mask_all_signals_of_current_thread() {
 #[inline]
 pub(crate) fn abort(msg: &[u8]) -> ! {
     fn ewrite(msg: &[u8]) {
-        use core::{ffi::c_void, hint, ptr};
+        use core::{ffi::c_void, hint};
         const LIMIT: u16 = 10;
-        let msg_buf: *const c_void = ptr::from_ref(msg).cast();
+        let msg_buf: *const [u8] = msg;
+        let msg_buf: *const c_void = msg_buf.cast();
         let mut remaining = msg.len();
         for _ in 0 .. LIMIT {
             if remaining >= 1 {
