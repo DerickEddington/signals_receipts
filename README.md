@@ -76,9 +76,13 @@ This crate was confirmed to build and pass its tests and examples on (x86_64 onl
   - NetBSD 9.1
   - OpenBSD 7.5
 - Linux
+  - Adélie 1.0 (uses musl)
   - Alpine 3.18 (uses musl)
+  - Chimera (uses musl)
   - Debian 12
   - NixOS 24.05
+  - openSUSE 15.5
+  - RHEL (Rocky) 9.4
   - Ubuntu 23.10
 - Mac
   - 10.13 High Sierra
