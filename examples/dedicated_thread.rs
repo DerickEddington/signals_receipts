@@ -43,11 +43,11 @@ fn main() {
         .name("dont-interrupt".to_owned())
         .spawn(|| {
             use core::pin::pin;
-            use sem_safe::unnamed::Semaphore;
+            use sem_safe::{non_named::Semaphore as _, plaster::non_named::Semaphore};
 
             // Just to have something to block on that would error with EINTR if a signal delivery
             // interrupted.
-            let sem = pin!(Semaphore::new());
+            let sem = pin!(Semaphore::uninit());
             let sem = sem.as_ref().init().unwrap();
             // Because no signal handlers should be called on this thread, this should just block
             // forever.

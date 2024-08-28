@@ -1,7 +1,7 @@
 [package]
 name = "signals_receipts"
 description = "Simple exfiltration of the receipt of POSIX signals."
-version = "0.1.1-pre"
+version = "0.2.0-pre"
 authors = ["Derick Eddington"]
 edition = "2021"
 rust-version = "1.76"
@@ -11,9 +11,15 @@ license = "Unlicense"
 repository = "https://app.radicle.xyz/nodes/ash.radicle.garden/rad:zEuRtz1NEa1AAcsDpE7NowDo3m6j"
 readme = "README.md"
 
+# This dep's types are intentionally exposed in the public API.
+# The compiled code is a little smaller and more efficient by controlling this dep's features
+# based on the platform like this, because this avoids having unneeded parts.
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+sem_safe = { version = "0.2.0", default-features = false, features = ["unnamed", "plaster"] }
+[target.'cfg(target_os = "macos")'.dependencies]
+sem_safe = { version = "0.2.0", default-features = false, features = ["anonymous", "plaster"] }
+
 [dependencies]
-# This crate's types are intentionally exposed in the public API.
-sem_safe = { version = "0.1.0" }
 # These crates are only internal implementation details that could be replaced with others that
 # provide equivalent capabilities as needed.
 cfg-if = "1.0.0"

@@ -21,7 +21,8 @@ use core::{ffi::c_int,
 use errno::{errno, set_errno};
 // These are re-exported because they're exposed in our public API.
 #[doc(no_inline)]
-pub use sem_safe::unnamed::{Semaphore, SemaphoreRef};
+pub use sem_safe::{non_named::Semaphore as SemaphoreMethods, plaster::non_named::Semaphore,
+                   SemaphoreRef};
 use util::{abort, mask_all_signals_of_current_thread, SigAction};
 
 

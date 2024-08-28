@@ -7,7 +7,7 @@ mod receipts;
 pub mod __internal;
 
 
-use crate::{AtomicUInt, Semaphore, SignalNumber, SignalReceipt};
+use crate::{AtomicUInt, Semaphore, SemaphoreMethods as _, SignalNumber, SignalReceipt};
 use __internal::Sealed;
 use core::{ops::ControlFlow,
            pin::Pin,
@@ -218,7 +218,8 @@ macro_rules! premade {
         $visib mod $name {
             use $crate::{consume_count_then_delegate, install_handler, uninstall_handler,
                          reset_counter, __internal::{signals_names, Sealed},
-                         Consumer, Premade, Semaphore, SemaphoreRef, SignalReceipt};
+                         Consumer, Premade, SignalReceipt,
+                         Semaphore, SemaphoreMethods as _, SemaphoreRef};
             use core::{pin::Pin, sync::atomic::{AtomicBool, AtomicU64}};
 
             /// The type that [`SignalReceipt`] and [`Premade`] are `impl`emented for.
@@ -250,7 +251,7 @@ macro_rules! premade {
                 type Break = $break;
 
                 fn semaphore() -> Pin<&'static Semaphore> {
-                    static SEMAPHORE: Semaphore = Semaphore::new();
+                    static SEMAPHORE: Semaphore = Semaphore::uninit();
                     Pin::static_ref(&SEMAPHORE)
                 }
 

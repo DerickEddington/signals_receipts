@@ -79,14 +79,12 @@ This crate was confirmed to build and pass its tests and examples on (x86_64 onl
   - Debian 12
   - NixOS 24.05
   - Ubuntu 23.10
+- Mac
+  - 10.13 High Sierra
+  - 12 Monterey
 - Solaris
   - OpenIndiana 2024.04
 
-All glibc- or musl-based Linux OSs should already work.  It might already work on further POSIX
-OSs.  If not, adding support for other POSIX OSs should be easy but might require making tweaks to
-this crate's conditional compilation.
-
-### macOS Unsupported
-
-Unfortunately, macOS does not provide the unnamed semaphores API (in violation of modern POSIX
-versions requiring it), and so it's not possible for the `sem_safe` dependency to work on macOS.  Instead of using that, it might be possible to use some API of macOS that can achieve the same and that is async-signal-safe.
+All glibc- or musl-based Linux OSs, and all macOS and Mac OS X versions, should already work.  It
+might already work on further POSIX OSs.  If not, adding support for other POSIX OSs should be
+easy but might require making tweaks to this crate's conditional compilation.
