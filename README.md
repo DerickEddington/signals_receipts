@@ -74,6 +74,7 @@ This crate was confirmed to build and pass its tests and examples on (x86_64 onl
 - BSD
   - FreeBSD 14.0
   - NetBSD 9.1
+  - OpenBSD 7.5
 - Linux
   - Alpine 3.18 (uses musl)
   - Debian 12

@@ -32,10 +32,8 @@ mod sigaction {
     cfg_if::cfg_if! {
         if #[cfg(any(
             all(target_os = "linux", any(target_env = "gnu", target_env = "musl")),
-            target_os = "freebsd",
-            target_os = "netbsd",
-            target_os = "illumos",
-            target_os = "macos",
+            target_os = "freebsd", target_os = "netbsd", target_os = "openbsd",
+            target_os = "illumos", target_os = "macos",
         ))] {
             macro_rules! sa_handler_cfg { ($obj:expr) => { ($obj).sa_sigaction }; }
         }
@@ -296,8 +294,8 @@ unsafe fn sigset_all_usual(set: *mut libc::sigset_t) {
         libc::SIGIOT,
         #[cfg(any(
             // SIGEMT is present in these OSs, for all CPU architectures it seems.
-            target_os = "freebsd", target_os = "netbsd", target_os = "illumos",
-            target_os = "macos",
+            target_os = "freebsd", target_os = "netbsd", target_os = "openbsd",
+            target_os = "illumos", target_os = "macos",
             // SIGEMT is not present for Linux x86.
             not(all(target_os = "linux", any(target_arch = "x86", target_arch = "x86_64")))
             // For all other OSs or architectures, which this crate currently doesn't have support
