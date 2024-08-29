@@ -13,12 +13,15 @@ mod premade;
 /// Helpers that are sometimes useful when using this crate.
 pub mod util;
 
+mod help;
+
 
 use core::{ffi::c_int,
            ops::ControlFlow,
            pin::Pin,
            sync::atomic::{AtomicBool, Ordering::Relaxed}};
 use errno::{errno, set_errno};
+use help::assert_errno_is_overflow;
 // These are re-exported because they're exposed in our public API.
 #[doc(no_inline)]
 pub use sem_safe::{non_named::Semaphore as SemaphoreMethods, plaster::non_named::Semaphore,
@@ -87,18 +90,11 @@ pub extern "C" fn handler<const SIGNUM: SignalNumber, T: SignalReceipt<SIGNUM>>(
         // Our change to the counter will be visible, as happens-before, to the thread that wakes.
         let r = sem.post();
         if r.is_err() {
-            let errno = errno().0;
-            if errno == libc::EOVERFLOW {
-                // The maximum allowable value of the semaphore would be exceeded.  We just live
-                // with this, because the other consuming thread(s) will continue to see the
-                // semaphore have a very-high positive value when doing `sem_wait()` and so it
-                // won't block and will continue to process the receipts.
-            } else {
-                // Impossible - `sem_safe` ensures the semaphores are valid. Unreachable. But
-                // `unreachable!()` can't be used, because panicking
-                // is not async-signal-safe.
+            assert_errno_is_overflow(|| {
+                // Impossible - `sem_safe` ensures the semaphores are valid.  Unreachable.  But
+                // `unreachable!()` can't be used, because panicking is not async-signal-safe.
                 abort(b"`sem_post()` errored!");
-            }
+            });
             set_errno(prev_errno);
         }
     } else {

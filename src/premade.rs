@@ -7,12 +7,12 @@ mod receipts;
 pub mod __internal;
 
 
-use crate::{AtomicUInt, Semaphore, SemaphoreMethods as _, SignalNumber, SignalReceipt};
+use crate::{help::assert_errno_is_overflow, AtomicUInt, Semaphore, SemaphoreMethods as _,
+            SignalNumber, SignalReceipt};
 use __internal::Sealed;
 use core::{ops::ControlFlow,
            pin::Pin,
            sync::atomic::{AtomicBool, Ordering::Relaxed}};
-use errno::errno;
 
 
 /// Functions for using a `SignalsReceipts` type to manage the signal handling and processing as
@@ -123,17 +123,11 @@ pub trait Premade: Sealed {
             // Our change to the flag will be visible, as happens-before, to the thread that
             // wakes.
             let r = sem.post();
-            #[allow(clippy::unreachable)]
             if r.is_err() {
-                let errno = errno().0;
-                if errno == libc::EOVERFLOW {
-                    // The maximum allowable value of the semaphore would be exceeded.  We just
-                    // live with this, because the other consuming thread will continue to see the
-                    // semaphore have a very-high positive value when doing `sem_wait()` and so it
-                    // won't block and will continue to process the false continue-flag.
-                } else {
+                #[allow(clippy::unreachable)]
+                assert_errno_is_overflow(|| {
                     unreachable!(); // Impossible - `sem_safe` ensures the semaphores are valid.
-                }
+                });
             }
         } else {
             // Our semaphore wasn't already initialized and couldn't be quickly.  This is very
