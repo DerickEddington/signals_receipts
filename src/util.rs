@@ -334,21 +334,36 @@ unsafe fn sigset_empty(set: *mut libc::sigset_t) {
 /// depend on whether or not they inherit the calling thread's mask.
 #[inline]
 pub fn mask_all_signals_of_current_thread() {
+    change_signal_mask_of_current_thread(sigset_all_usual, libc::SIG_BLOCK);
+}
+
+/// Changes the calling thread's signal mask to not "block" (to allow to be delivered) all
+/// signals.
+#[inline]
+pub fn unmask_all_signals_of_current_thread() {
+    change_signal_mask_of_current_thread(sigset_empty, libc::SIG_SETMASK);
+}
+
+fn change_signal_mask_of_current_thread(
+    sigset_func: unsafe fn(set: *mut libc::sigset_t),
+    how: core::ffi::c_int,
+) {
     use core::{mem::MaybeUninit, ptr};
 
     let set = {
         let mut set = MaybeUninit::<libc::sigset_t>::zeroed();
         // SAFETY: The argument is valid, aligned, and unaliased. It's allowed to be
-        // uninitialized.
+        // uninitialized.  `sigset_func` is only one of our two helper functions.
         unsafe {
-            sigset_all_usual(set.as_mut_ptr());
+            sigset_func(set.as_mut_ptr());
         }
         // SAFETY: We just initialized it.
         unsafe { set.assume_init() }
     };
 
-    // SAFETY: The arguments are proper, because `set` was initialized.
-    let r = unsafe { libc::pthread_sigmask(libc::SIG_BLOCK, &set, ptr::null_mut()) };
+    // SAFETY: The arguments are proper, because `set` was initialized and `how` is only one of
+    // the allowed values.
+    let r = unsafe { libc::pthread_sigmask(how, &set, ptr::null_mut()) };
     debug_assert_eq!(0, r, "will succeed");
 }
 

@@ -26,7 +26,8 @@ use help::assert_errno_is_overflow;
 #[doc(no_inline)]
 pub use sem_safe::{non_named::Semaphore as SemaphoreMethods, plaster::non_named::Semaphore,
                    SemaphoreRef};
-use util::{abort, mask_all_signals_of_current_thread, SigAction};
+use util::{abort, mask_all_signals_of_current_thread, unmask_all_signals_of_current_thread,
+           SigAction};
 
 
 /// The type of a signal number as defined by C (C17 7.14).
@@ -170,7 +171,9 @@ pub type Consumer<B = (), C = ()> = dyn FnMut(C) -> ControlFlow<B, C>;
 /// This function, and so the given `consumers` functions also, are executed in a normal context,
 /// and so they can use things like normal, i.e. not be limited by async-signal-safety.
 ///
-/// If `do_mask` is `true`, all non-exceptional signals will be masked for the current thread.
+/// If `do_mask` is `true`, all non-exceptional signals will be masked to be blocked for the
+/// current thread.  If it's `false`, all signals will be unmasked to be unblocked, in which case
+/// the given `consumers` functions must remain correct when interrupted by signals.
 ///
 /// If `try_init_limit` is positive, initializing `sem` will be retried up to that many times,
 /// which can be useful if other threads might race to initialize it.  Another thread that is
@@ -203,11 +206,16 @@ pub fn consume_loop<B, C>(
         // quite as simple).
         mask_all_signals_of_current_thread();
     } else {
-        // This thread can and probably will have the application's signals delivered to it and
-        // handled on it.  This should work fine as long as the consumer functions can handle
+        // Ensure this thread can and probably will have the application's signals delivered to it
+        // and handled on it.  This should work fine as long as the consumer functions can weather
         // being interrupted.  This could be a reasonable choice if an application wants to mask
         // signals for all other threads and have only this thread be dedicated to doing both
-        // their async-delivery handling and the receipt processing.
+        // their async-delivery handling and the receipt processing.  This forces this thread's
+        // signal mask to have all signals unblocked, which is helpful when the application has
+        // already blocked them for all other threads and is starting a new thread for this
+        // function, e.g. when re-installing this receipts processing after it'd already been
+        // uninstalled and finished before.
+        unmask_all_signals_of_current_thread();
     }
 
     // Initialize the semaphore if it's not already, retrying the given amount of times.  This

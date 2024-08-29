@@ -83,7 +83,8 @@ pub trait Premade: Sealed {
 
     /// Intended to be used as (or within) the start function of a dedicated thread.
     ///
-    /// The current signal mask will not be changed and will be left as-is.
+    /// The current signal mask will be changed to ensure that no signals are masked (i.e. that
+    /// all are unblocked) so that they may be delivered to the thread that runs this.
     #[must_use]
     #[inline]
     fn consume_loop_no_mask() -> Self::Break

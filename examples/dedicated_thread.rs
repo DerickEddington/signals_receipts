@@ -27,17 +27,17 @@ fn main() {
     use signals_receipts::Premade as _;
     use signals_receipts_premade::SignalsReceipts;
 
+    // Mask "all" signals for the main thread and all other threads started hereafter, so that
+    // signal handlers are not called on them.  Except, the consume-loop thread, started after,
+    // still won't have signals masked because we use the "no_mask" option.
+    mask_all_signals_of_current_thread();
+
     // This also disables `SA_RESTART`, so our "dont-interrupt" thread is properly tested.
     SignalsReceipts::install_all_handlers_with(true, false);
 
-    // Not masking signals allows this thread to have signal handlers called on it.  This thread
-    // will be the only one that can have signal handlers called on it.
+    // Not masking signals for this thread allows it to have signal handlers called on it.  This
+    // thread is the only one that can have signal handlers called on it.
     let consumer = thread::spawn(SignalsReceipts::consume_loop_no_mask);
-
-    // Mask "all" signals for both the main thread and all threads started hereafter, so that
-    // signal handlers are not called on them.  Must not be done before the consume-loop thread is
-    // started, so that thread won't have signals masked.
-    mask_all_signals_of_current_thread();
 
     thread::Builder::new()
         .name("dont-interrupt".to_owned())
