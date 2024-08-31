@@ -21,7 +21,7 @@ use core::{ops::ControlFlow,
 /// This trait is sealed to only be implemented automatically by the `premade` macro.  This trait
 /// only exists so that macro can provide these functions.
 pub trait Premade: Sealed {
-    /// The type of the accumulator value that is passed in and out of all delegates
+    /// The type of the state value that is passed in and out of all delegates
     /// during processing.
     type Continue;
     /// The type of the final value that the processing finishes with.
@@ -102,7 +102,7 @@ pub trait Premade: Sealed {
     #[must_use]
     fn consume_loop_with(
         do_mask: bool,
-        accum: Self::Continue,
+        state: Self::Continue,
         finish: Self::Break,
     ) -> Self::Break;
 
@@ -264,7 +264,7 @@ macro_rules! premade {
 
                 fn consume_loop_with(
                     do_mask: bool,
-                    accum: Self::Continue,
+                    state: Self::Continue,
                     finish: Self::Break
                 ) -> Self::Break
                 {
@@ -279,14 +279,14 @@ macro_rules! premade {
                         &mut repeat_for!($callback: delegates::callback::__FUNC)
                             as &mut Consumer<Self::Break, Self::Continue>,
                     )? $(
-                        &mut (|accum| consume_count_then_delegate::<
+                        &mut (|state| consume_count_then_delegate::<
                               {signals_names::$signum}, Self, _, Self::Break, Self::Continue>(
-                                  accum, delegates::$signum::__FUNC))
+                                  state, delegates::$signum::__FUNC))
                             as &mut Consumer<Self::Break, Self::Continue>
                     ),+ ];
                     let continue_flag = <Self as Premade>::continue_flag();
 
-                    $crate::consume_loop(do_mask, sem, try_init_limit, accum, &mut consumers,
+                    $crate::consume_loop(do_mask, sem, try_init_limit, state, &mut consumers,
                                          continue_flag, finish)
                 }
 
@@ -339,7 +339,7 @@ macro_rules! premade {
 #[must_use]
 #[inline]
 pub fn consume_count_then_delegate<const SIGNUM: SignalNumber, T, F, B, C>(
-    accum: C,
+    state: C,
     mut delegate: F,
 ) -> ControlFlow<B, C>
 where
@@ -347,7 +347,7 @@ where
     F: FnMut(&mut Receipt<<<T as SignalReceipt<SIGNUM>>::AtomicUInt as AtomicUInt>::UInt, B, C>),
 {
     let cur_count = <T as SignalReceipt<SIGNUM>>::take_count();
-    let flow = ControlFlow::Continue(accum);
+    let flow = ControlFlow::Continue(state);
     if cur_count == 0.into() {
         // Do not call the delegate, when the count is zero.
         flow

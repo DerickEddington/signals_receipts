@@ -189,7 +189,7 @@ pub fn consume_loop<B, C>(
     do_mask: bool,
     sem: Pin<&Semaphore>,
     try_init_limit: u64,
-    mut accum: C,
+    mut state: C,
     consumers: &mut [&mut Consumer<B, C>],
     continue_flag: &AtomicBool,
     finish: B,
@@ -230,8 +230,8 @@ pub fn consume_loop<B, C>(
         }
 
         for consume in &mut *consumers {
-            match consume(accum) {
-                ControlFlow::Continue(val) => accum = val,
+            match consume(state) {
+                ControlFlow::Continue(val) => state = val,
                 ControlFlow::Break(val) => break 'outer val,
             }
         }

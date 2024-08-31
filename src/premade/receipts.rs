@@ -8,7 +8,7 @@ use core::{cmp::Ordering, mem, ops::ControlFlow};
 /// automatically used by the `premade` macro).
 ///
 /// `B` is the type of the final value that the processing finishes with.  `C` is the type of the
-/// accumulator value that is passed in and out of all delegates during processing.
+/// state value that is passed in and out of all delegates during processing.
 #[non_exhaustive]
 #[must_use]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -21,18 +21,18 @@ pub struct Receipt<U, B = (), C = ()> {
     /// Control whether the processing of subsequent receipts will continue or finish after the
     /// current delegate (which is processing this instance) returns.
     ///
-    /// Initialized to `Continue` with the current accumulator value, so that continuing is what
+    /// Initialized to `Continue` with the current state value, so that continuing is what
     /// is done by default.  Intended to be mutated to `Break` by a delegate that wants to cause
     /// finishing.
     ///
-    /// When `Continue`, the contained value can be used as a mutable accumulator that is passed
+    /// When `Continue`, the contained value can be used as a mutable state that is passed
     /// to and returned from all delegates during processing.
     pub flow:      ControlFlow<B, C>,
 }
 
 
 impl<U, B, C> Receipt<U, B, C> {
-    const NOT_ACCUM_MSG: &'static str = "should be `ControlFlow::Continue` to get accum";
+    const NOT_STATE_MSG: &'static str = "should be `ControlFlow::Continue` to get state";
 
     /// Cause the processing to finish.
     ///
@@ -51,71 +51,71 @@ impl<U, B, C> Receipt<U, B, C> {
     #[inline]
     pub fn break_loop_with(&mut self, val: B) { self.flow = ControlFlow::Break(val); }
 
-    /// Return a reference to the accumulator value (which is held in `self.flow`).
+    /// Return a reference to the state value (which is held in `self.flow`).
     ///
     /// # Panics
     /// If `self.flow` is not `ControlFlow::Continue`.  When a `Receipt` is given to a delegate,
     /// it is guaranteed to hold `Continue`, and so this won't panic.
     #[must_use]
     #[inline]
-    pub fn get_accum_ref(&self) -> &C {
+    pub fn get_state_ref(&self) -> &C {
         match &self.flow {
-            ControlFlow::Continue(accum) => accum,
+            ControlFlow::Continue(state) => state,
             #[allow(clippy::panic)]
-            ControlFlow::Break(_) => panic!("{}", Self::NOT_ACCUM_MSG),
+            ControlFlow::Break(_) => panic!("{}", Self::NOT_STATE_MSG),
         }
     }
 
-    /// Like [`Self::get_accum_ref`] but returns a mutable reference.
+    /// Like [`Self::get_state_ref`] but returns a mutable reference.
     ///
     /// # Panics
-    /// Same as `Self::get_accum_ref`.
+    /// Same as `Self::get_state_ref`.
     #[must_use]
     #[inline]
-    pub fn get_accum_mut(&mut self) -> &mut C {
+    pub fn get_state_mut(&mut self) -> &mut C {
         match &mut self.flow {
-            ControlFlow::Continue(accum) => accum,
+            ControlFlow::Continue(state) => state,
             #[allow(clippy::panic)]
-            ControlFlow::Break(_) => panic!("{}", Self::NOT_ACCUM_MSG),
+            ControlFlow::Break(_) => panic!("{}", Self::NOT_STATE_MSG),
         }
     }
 
-    /// Cause the processing to continue with the given accumulator value.
+    /// Cause the processing to continue with the given state value.
     ///
     /// Assigns `self.flow = ControlFlow::Continue(val)`.
     #[inline]
-    pub fn set_accum(&mut self, val: C) { self.flow = ControlFlow::Continue(val); }
+    pub fn set_state(&mut self, val: C) { self.flow = ControlFlow::Continue(val); }
 
-    /// Apply the given `updater` function to the accumulator value as mutable, to update it.
+    /// Apply the given `updater` function to the state value as mutable, to update it.
     ///
     /// The `updater` can mutate or replace the value in-place.
     ///
     /// # Panics
-    /// Same as [`Self::get_accum_mut`].
+    /// Same as [`Self::get_state_mut`].
     #[inline]
-    pub fn update_accum<F: FnOnce(&mut C)>(&mut self, updater: F) {
-        updater(self.get_accum_mut());
+    pub fn update_state<F: FnOnce(&mut C)>(&mut self, updater: F) {
+        updater(self.get_state_mut());
     }
 
-    /// Replace the accumulator with the given `val` and return the previous value.
+    /// Replace the state with the given `val` and return the previous value.
     ///
     /// # Panics
-    /// Same as [`Self::get_accum_mut`].
+    /// Same as [`Self::get_state_mut`].
     #[must_use]
     #[inline]
-    pub fn replace_accum(&mut self, val: C) -> C { mem::replace(self.get_accum_mut(), val) }
+    pub fn replace_state(&mut self, val: C) -> C { mem::replace(self.get_state_mut(), val) }
 
-    /// Return the current accumulator value and replace it with the default.
+    /// Return the current state value and replace it with the default.
     ///
     /// # Panics
-    /// Same as [`Self::get_accum_mut`].
+    /// Same as [`Self::get_state_mut`].
     #[must_use]
     #[inline]
-    pub fn take_accum(&mut self) -> C
+    pub fn take_state(&mut self) -> C
     where
         C: Default,
     {
-        mem::take(self.get_accum_mut())
+        mem::take(self.get_state_mut())
     }
 }
 

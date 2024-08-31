@@ -17,27 +17,27 @@ signals_receipts::premade! {
      use std::process::exit;
 
      #[derive(Default)]
-     pub(crate) struct Accum {
+     pub(crate) struct State {
          alarm_count: Saturating<u64>,
          hyper_count: Saturating<u128>,
      }
     )
 
-    type Continue = delegates::Accum;
+    type Continue = delegates::State;
     type Break = String;
 
     // These functions are executed in the separate normal thread, *not* in an async-signal
     // handler.  As such, they can use things like normal, i.e. not be limited by
     // async-signal-safety.
 
-    {callback} => |accum| {
-        // println!("Loop Iteration ({} alarm, {} urg)", accum.alarm_count, accum.hyper_count);
-        ControlFlow::Continue(accum)
+    {callback} => |state| {
+        // println!("Loop Iteration ({} alarm, {} urg)", state.alarm_count, state.hyper_count);
+        ControlFlow::Continue(state)
     };
     SIGALRM => |receipt| {
         println!("Alarm ({})", receipt.cur_count);
         set_alarm();  // An alarm only triggers once, so reset each time.
-        receipt.update_accum(|a| a.alarm_count += 1);
+        receipt.update_state(|s| s.alarm_count += 1);
     };
     SIGINT => |receipt| {
         println!("Interrupt ({})", receipt.cur_count);
@@ -50,11 +50,11 @@ signals_receipts::premade! {
     SIGUSR1 => |receipt| {
         println!("User-1 ({})", receipt.cur_count);
     };
-    SIGURG => |receipt| receipt.get_accum_mut().hyper_count += 1;
+    SIGURG => |receipt| receipt.get_state_mut().hyper_count += 1;
     SIGQUIT => |receipt| {
-        let accum = receipt.take_accum();
+        let state = receipt.take_state();
         receipt.break_loop_with(format!("Done (had: {} alarm, {} urg)",
-                                        accum.alarm_count, accum.hyper_count));
+                                        state.alarm_count, state.hyper_count));
     };
     SIGTERM => |receipt| {
         println!("Terminate ({})", receipt.cur_count);
