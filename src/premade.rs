@@ -120,7 +120,7 @@ pub trait Premade: Sealed {
         Self::continue_flag().store(false, Relaxed);
 
         // Ensure the thread wakes to see the false continue-flag now.
-        if let Some(sem) = Self::semaphore().try_init(100) {
+        if let Some(sem) = Self::semaphore().try_init(10_000) {
             // Our change to the flag will be visible, as happens-before, to the thread that
             // wakes.
             let r = sem.post();
