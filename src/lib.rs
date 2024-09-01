@@ -224,8 +224,11 @@ pub fn consume_loop<B, C>(
     #[allow(clippy::expect_used)]
     let sem = sem.try_init(try_init_limit).expect("semaphore initialization must succeed");
 
+    let is_discontinue = || !continue_flag.load(Relaxed);
+
     'outer: loop {
-        if !continue_flag.load(Relaxed) {
+        // Check here also, in case `consumers` is empty.
+        if is_discontinue() {
             break finish;
         }
 
@@ -233,6 +236,10 @@ pub fn consume_loop<B, C>(
             match consume(state) {
                 ControlFlow::Continue(val) => state = val,
                 ControlFlow::Break(val) => break 'outer val,
+            }
+            // Check again after each, to notice ASAP, to not call any more once it's toggled.
+            if is_discontinue() {
+                break 'outer finish;
             }
         }
 
