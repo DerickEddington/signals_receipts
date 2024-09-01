@@ -44,6 +44,9 @@ pub trait Premade: Sealed {
     /// `SA_RESTART` will be enabled so that interruptible functions shall restart if interrupted
     /// by delivery of any one of these signals.
     ///
+    /// [`Self::reset_all_counters()`] and [`Self::reset_continue_flag()`] will also be done, so
+    /// that those start fresh if this call is re-installing our handling.
+    ///
     /// # Panics
     /// If installing a handler fails.  Only possible if an invalid signal number was given.
     #[inline]
@@ -52,6 +55,9 @@ pub trait Premade: Sealed {
     /// Do [`install_handler()`](crate::install_handler) for all of the declared signal numbers.
     ///
     /// The arguments are passed to each `install_handler()`.
+    ///
+    /// [`Self::reset_all_counters()`] and [`Self::reset_continue_flag()`] will also be done, so
+    /// that those start fresh if this call is re-installing our handling.
     ///
     /// # Panics
     /// If installing a handler fails.  Only possible if an invalid signal number was given.
@@ -67,6 +73,10 @@ pub trait Premade: Sealed {
 
     /// Assign zero to each counter, for all of the declared signal numbers.
     fn reset_all_counters();
+
+    /// Assign `true` to our flag that indicates if the consuming thread should continue.
+    #[inline]
+    fn reset_continue_flag() { Self::continue_flag().store(true, Relaxed); }
 
     /// Intended to be used as (or within) the start function of a dedicated thread.
     ///
@@ -251,6 +261,21 @@ macro_rules! premade {
                 }
 
                 fn install_all_handlers_with(mask: bool, restart: bool) {
+                    // Make the counters start fresh if our handling is being re-installed.  Must
+                    // be done before installing the handlers next.
+                    Self::reset_all_counters();
+
+                    // Make our flag, that indicates if the consuming thread should continue,
+                    // start fresh if our handling is being re-installed.  Must be done before
+                    // installing the handlers next.
+                    Self::reset_continue_flag();
+
+                    // We don't reset our semaphore here, in case its value is high, because that
+                    // would require looping (to decrement its value via `.try_wait()`) an
+                    // unbounded amount of times which could cause a significant delay.  Resetting
+                    // the semaphore is unnecessary because `$crate::consume_loop` still works
+                    // when it's not reset.
+
                     $( install_handler::<{signals_names::$signum}, Self>(mask, restart); )+
                 }
 
@@ -285,6 +310,14 @@ macro_rules! premade {
                             as &mut Consumer<Self::Break, Self::Continue>
                     ),+ ];
                     let continue_flag = <Self as Premade>::continue_flag();
+
+                    // (Must not try here to make our semaphore start fresh if our handling is
+                    // being re-installed, because resetting its value could interfere with recent
+                    // posts for signals that were delivered after our handlers were re-installed.
+                    // If our semaphore has a value left over from when our handling was
+                    // previously uninstalled and before our handlers were re-installed, that will
+                    // only cause `consume_loop` to loop that many extra times checking the
+                    // receipt counters pointlessly and harmlessly.)
 
                     $crate::consume_loop(do_mask, sem, try_init_limit, state, &mut consumers,
                                          continue_flag, finish)
