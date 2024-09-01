@@ -96,24 +96,51 @@ fn main() {
 /// process.
 fn primary(exec_filename: &str) {
     use crate::signals_receipts_premade::SignalsReceipts;
+    use core::time::Duration;
     use signals_receipts::{util::mask_all_signals_of_current_thread, Premade as _};
     use std::{os::unix::process::{CommandExt as _, ExitStatusExt as _},
               process::{self, Command},
               thread};
 
-    // Install signal handlers ASAP, in case any signals are delivered immediately.  It's fine
-    // that the consuming thread (named "signals") isn't running yet, because any receipts will
-    // still be counted and the consuming thread will process those later after it's started.
-    // Alternatively, this could be done in the "signals" thread before the consume loop.
-    SignalsReceipts::install_all_handlers();
+    fn install_wait_uninstall() {
+        // Install signal handlers ASAP, in case any signals are delivered immediately.  It's fine
+        // that the consuming thread (named "signals") isn't running yet, because any receipts
+        // will still be counted and the consuming thread will process those later after it's
+        // started.  Alternatively, this could be done in the "signals" thread before the consume
+        // loop.
+        SignalsReceipts::install_all_handlers();
 
-    println!("Send SIGQUIT (key-press ^\\) to exit.");
+        println!("Send SIGQUIT (key-press ^\\) to exit.");
 
-    // Start the thread that processes receipts of signals.
-    let consumer = thread::Builder::new()
-        .name("signals".to_owned())
-        .spawn(SignalsReceipts::consume_loop)
-        .unwrap();
+        // Start the thread that processes receipts of signals.
+        let consumer = thread::Builder::new()
+            .name("signals".to_owned())
+            .spawn(SignalsReceipts::consume_loop)
+            .unwrap();
+
+        // Just something to exercise sending a signal periodically.
+        set_alarm();
+
+        // Wait for the "signals" thread to finish, which only happens if its loop was
+        // broken-out-of by one of the signal-consumer functions, which in our case only happens
+        // if SIGQUIT was received.
+        let val = consumer.join(); // (If this were interrupted, it'd remain blocked.)
+
+        // Only reached when SIGQUIT was received.
+
+        // Ensure SIGALRM won't be generated and so won't terminate our process after the handlers
+        // are uninstalled.
+        unset_alarm();
+
+        // Uninstall the signal handlers ASAP after the consume loop no longer exists to process
+        // signals.  Alternatively, this could be done in the "signals" thread after the consume
+        // loop.
+        SignalsReceipts::uninstall_all_handlers();
+
+        // The break-out-of-loop signal-consumer function supplies this value, which we use as our
+        // final message.
+        println!("{}.", val.unwrap());
+    }
 
     // Start threads to handle delivery of signals, because the main thread won't be.  Have
     // multiple to try to keep up with how fast the hyper child process sends them.  This amount
@@ -136,9 +163,6 @@ fn primary(exec_filename: &str) {
     // masking also).
     mask_all_signals_of_current_thread();
 
-    // Just something to exercise sending a signal periodically.
-    set_alarm();
-
     // Start the child process that sends us very many signals endlessly.
     let mut hyper_child = Command::new(exec_filename)
         .arg0("hyper-child")
@@ -146,24 +170,10 @@ fn primary(exec_filename: &str) {
         .spawn()
         .unwrap();
 
-    // Wait for the "signals" thread to finish, which only happens if its loop was broken-out-of
-    // by one of the signal-consumer functions, which in our case only happens if SIGQUIT was
-    // received.
-    let val = consumer.join(); // (If this were interrupted, it'd remain blocked.)
-
-    // Only reached when SIGQUIT was received.
-
-    // Ensure SIGALRM won't be generated and so won't terminate our process after the handlers are
-    // uninstalled.
-    unset_alarm();
-
-    // Uninstall the signal handlers ASAP after the consume loop no longer exists to process
-    // signals.  Alternatively, this could be done in the "signals" thread after the consume loop.
-    SignalsReceipts::uninstall_all_handlers();
-
-    // The break-out-of-loop signal-consumer function supplies this value, which we use as our
-    // final message.
-    println!("{}.", val.unwrap());
+    install_wait_uninstall();
+    thread::sleep(Duration::from_secs(2));
+    // Re-install it and do it again.
+    install_wait_uninstall();
 
     // Terminate and clean-up our child process.
     hyper_child.kill().unwrap();
