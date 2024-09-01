@@ -129,7 +129,7 @@ fn primary(exec_filename: &str) {
     }
 
     // Prevent the main thread from handling our signals (but exceptional signal numbers are not
-    // masked by this call), so that it can more quickly see when the `t.join()` is ready
+    // masked by this call), so that it can more quickly see when the `consumer.join()` is ready
     // (otherwise, the syscall involved in the `join()` would continually be interrupted by the
     // many delivered signals, which would significantly delay the syscall being able to finish).
     // This must only be done after starting the above threads (otherwise they'd inherit this
@@ -152,6 +152,10 @@ fn primary(exec_filename: &str) {
     let val = consumer.join(); // (If this were interrupted, it'd remain blocked.)
 
     // Only reached when SIGQUIT was received.
+
+    // Ensure SIGALRM won't be generated and so won't terminate our process after the handlers are
+    // uninstalled.
+    unset_alarm();
 
     // Uninstall the signal handlers ASAP after the consume loop no longer exists to process
     // signals.  Alternatively, this could be done in the "signals" thread after the consume loop.
