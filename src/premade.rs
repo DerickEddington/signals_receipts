@@ -36,19 +36,10 @@ pub trait Premade: Sealed {
     /// This is async-signal-safe, and so it's safe for this to be called from a signal handler.
     fn semaphore() -> Pin<&'static Semaphore>;
 
-    /// Do [`install_handler()`](crate::install_handler) for all of the declared signal numbers.
-    ///
-    /// All (non-exceptional) signals will be masked during when `handler` is called upon delivery
-    /// of any one of these signals.
-    ///
-    /// `SA_RESTART` will be enabled so that interruptible functions shall restart if interrupted
-    /// by delivery of any one of these signals.
-    ///
-    /// [`Self::reset_all_counters()`] and [`Self::reset_continue_flag()`] will also be done, so
-    /// that those start fresh if this call is re-installing our handling.
+    /// Like [`Self::install_all_handlers_with`] with `mask = true` and `restart = true`.
     ///
     /// # Panics
-    /// If installing a handler fails.  Only possible if an invalid signal number was given.
+    /// Same as `Self::install_all_handlers_with`.
     #[inline]
     fn install_all_handlers() { Self::install_all_handlers_with(true, true); }
 
