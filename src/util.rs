@@ -266,8 +266,34 @@ mod sigaction {
 }
 
 
+macro_rules! async_signal_and_fork_safe {
+    () => {
+        "\n\nThis is async-signal-safe, and so it's safe for this to be called: from a signal \
+         handler, or immediately after a `fork()` in the child (e.g. before an `exec()`)."
+    };
+}
+
+/// `debug_assert_eq` can't be used, because panicking is not async-signal-safe.
+macro_rules! debug_abort_assert_eq {
+    ($left:expr, $right:expr, $msg:literal) => {
+        debug_abort_assert!((($left) == ($right)), $msg)
+    };
+}
+
+/// `debug_assert` can't be used, because panicking is not async-signal-safe.
+macro_rules! debug_abort_assert {
+    ($cond:expr, $msg:literal) => {
+        #[cfg(debug_assertions)]
+        if !($cond) {
+            abort($msg);
+        }
+    };
+}
+
+
 /// Initializes a `sigset_t` to have almost all signals set.
 #[doc = except_signals!()]
+#[doc = async_signal_and_fork_safe!()]
 ///
 /// # Safety:
 /// The argument must be valid, aligned, and unaliased. It's allowed to be uninitialized.
@@ -275,7 +301,7 @@ mod sigaction {
 unsafe fn sigset_all_usual(set: *mut libc::sigset_t) {
     // SAFETY: The caller must uphold the safety.
     let r1 = unsafe { libc::sigfillset(set) };
-    debug_assert_eq!(0, r1, "`sigfillset()` never errors");
+    debug_abort_assert_eq!(0, r1, b"`sigfillset()` never errors");
 
     for must_not in [
         // If a "computational exception" occurs in a thread, one of these will be generated and
@@ -310,11 +336,12 @@ unsafe fn sigset_all_usual(set: *mut libc::sigset_t) {
     ] {
         // SAFETY: The arguments are proper, because `set` was initialized.
         let r2 = unsafe { libc::sigdelset(set, must_not) };
-        debug_assert_eq!(0, r2, "will succeed, because all are supported signal numbers");
+        debug_abort_assert_eq!(0, r2, b"will succeed, because all are supported signal numbers");
     }
 }
 
 /// Initializes a `sigset_t` to have no signals set.
+#[doc = async_signal_and_fork_safe!()]
 ///
 /// # Safety:
 /// The argument must be valid, aligned, and unaliased. It's allowed to be uninitialized.
@@ -322,7 +349,7 @@ unsafe fn sigset_all_usual(set: *mut libc::sigset_t) {
 unsafe fn sigset_empty(set: *mut libc::sigset_t) {
     // SAFETY: The caller must uphold the safety.
     let r = unsafe { libc::sigemptyset(set) };
-    debug_assert_eq!(0, r, "`sigemptyset()` never errors");
+    debug_abort_assert_eq!(0, r, b"`sigemptyset()` never errors");
 }
 
 
@@ -332,6 +359,7 @@ unsafe fn sigset_empty(set: *mut libc::sigset_t) {
 ///
 /// Note that other threads can still receive any signals depending on their masks, which might
 /// depend on whether or not they inherit the calling thread's mask.
+#[doc = async_signal_and_fork_safe!()]
 #[inline]
 pub fn mask_all_signals_of_current_thread() {
     change_signal_mask_of_current_thread(sigset_all_usual, libc::SIG_BLOCK);
@@ -339,11 +367,13 @@ pub fn mask_all_signals_of_current_thread() {
 
 /// Changes the calling thread's signal mask to not "block" (to allow to be delivered) all
 /// signals.
+#[doc = async_signal_and_fork_safe!()]
 #[inline]
 pub fn unmask_all_signals_of_current_thread() {
     change_signal_mask_of_current_thread(sigset_empty, libc::SIG_SETMASK);
 }
 
+/// This is async-signal-safe if `sigset_func` is.
 fn change_signal_mask_of_current_thread(
     sigset_func: unsafe fn(set: *mut libc::sigset_t),
     how: core::ffi::c_int,
@@ -364,7 +394,7 @@ fn change_signal_mask_of_current_thread(
     // SAFETY: The arguments are proper, because `set` was initialized and `how` is only one of
     // the allowed values.
     let r = unsafe { libc::pthread_sigmask(how, &set, ptr::null_mut()) };
-    debug_assert_eq!(0, r, "will succeed");
+    debug_abort_assert_eq!(0, r, b"will succeed");
 }
 
 
