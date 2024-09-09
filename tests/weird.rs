@@ -9,6 +9,7 @@ use core::time::Duration;
 use libc::{SIGINT, SIGUSR2};
 use std::thread;
 
+#[path = "help/util.rs"]
 mod util;
 use util::raise;
 

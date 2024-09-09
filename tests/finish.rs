@@ -12,6 +12,7 @@ use signals_receipts::Premade as _;
 use signals_receipts_premade::SignalsReceipts;
 use std::thread;
 
+#[path = "help/util.rs"]
 mod util;
 use util::raise;
 

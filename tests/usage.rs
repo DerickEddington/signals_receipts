@@ -15,6 +15,7 @@ use libc::{SIGINT, SIGTERM, SIGURG, SIGUSR1};
 use signals_receipts::{uninstall_handler, Premade as _, Receipt};
 use std::thread;
 
+#[path = "help/util.rs"]
 mod util;
 use util::raise;
 

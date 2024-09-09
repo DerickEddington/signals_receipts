@@ -18,7 +18,7 @@
 // installs its handler.
 use libc::SIGURG;
 
-#[path = "../tests/util/mod.rs"]
+#[path = "../tests/help/util.rs"]
 mod util;
 
 

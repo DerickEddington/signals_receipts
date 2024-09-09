@@ -10,7 +10,7 @@
     unused_crate_dependencies // Ignore the lib crate's deps that are supplied here also.
 )]
 
-#[path = "../tests/util/mod.rs"]
+#[path = "../tests/help/util.rs"]
 mod util;
 
 
