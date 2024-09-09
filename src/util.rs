@@ -1,7 +1,7 @@
 // MAYBE: This could become a separate library published on Crates.io in the future, maybe named
 // `signals_utils`.
 
-#![allow(unsafe_code)]
+#![allow(unsafe_code, clippy::used_underscore_binding)]
 
 pub(crate) use sigaction::SigAction;
 
@@ -300,8 +300,8 @@ macro_rules! debug_abort_assert {
 #[allow(clippy::unnecessary_safety_comment)] // Suppress Clippy bug.
 unsafe fn sigset_all_usual(set: *mut libc::sigset_t) {
     // SAFETY: The caller must uphold the safety.
-    let r1 = unsafe { libc::sigfillset(set) };
-    debug_abort_assert_eq!(0, r1, b"`sigfillset()` never errors");
+    let _r1 = unsafe { libc::sigfillset(set) };
+    debug_abort_assert_eq!(0, _r1, b"`sigfillset()` never errors");
 
     for must_not in [
         // If a "computational exception" occurs in a thread, one of these will be generated and
@@ -335,8 +335,8 @@ unsafe fn sigset_all_usual(set: *mut libc::sigset_t) {
         libc::SIGSTOP,
     ] {
         // SAFETY: The arguments are proper, because `set` was initialized.
-        let r2 = unsafe { libc::sigdelset(set, must_not) };
-        debug_abort_assert_eq!(0, r2, b"will succeed, because all are supported signal numbers");
+        let _r2 = unsafe { libc::sigdelset(set, must_not) };
+        debug_abort_assert_eq!(0, _r2, b"will succeed, because all are supported signal numbers");
     }
 }
 
@@ -348,8 +348,8 @@ unsafe fn sigset_all_usual(set: *mut libc::sigset_t) {
 #[allow(clippy::unnecessary_safety_comment)] // Suppress Clippy bug.
 unsafe fn sigset_empty(set: *mut libc::sigset_t) {
     // SAFETY: The caller must uphold the safety.
-    let r = unsafe { libc::sigemptyset(set) };
-    debug_abort_assert_eq!(0, r, b"`sigemptyset()` never errors");
+    let _r = unsafe { libc::sigemptyset(set) };
+    debug_abort_assert_eq!(0, _r, b"`sigemptyset()` never errors");
 }
 
 
@@ -393,8 +393,8 @@ fn change_signal_mask_of_current_thread(
 
     // SAFETY: The arguments are proper, because `set` was initialized and `how` is only one of
     // the allowed values.
-    let r = unsafe { libc::pthread_sigmask(how, &set, ptr::null_mut()) };
-    debug_abort_assert_eq!(0, r, b"will succeed");
+    let _r = unsafe { libc::pthread_sigmask(how, &set, ptr::null_mut()) };
+    debug_abort_assert_eq!(0, _r, b"will succeed");
 }
 
 
