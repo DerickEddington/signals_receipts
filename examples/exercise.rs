@@ -10,6 +10,9 @@
     unused_crate_dependencies // Ignore the lib crate's deps that are supplied here also.
 )]
 
+#[path = "../tests/util/mod.rs"]
+mod util;
+
 
 signals_receipts::premade! {
     (use crate::{set_alarm, unset_alarm};
@@ -187,21 +190,9 @@ fn primary(exec_filename: &str) {
 /// under significant load while it handles your other signals, to test that your signals are
 /// still handled and consumed properly.
 fn hyper(primary_pid: u32) {
-    use signals_receipts::{util::mask_all_signals_of_current_thread, SignalNumber};
+    use signals_receipts::util::mask_all_signals_of_current_thread;
     use std::thread;
-
-    fn send_signal_to_proc(signum: SignalNumber, pid: libc::pid_t) -> bool {
-        #![allow(unsafe_code)]
-        // SAFETY: The arguments are proper.
-        let r = unsafe { libc::kill(pid, signum) };
-        if r == 0 {
-            true
-        } else {
-            let errno = errno::errno().0;
-            assert_eq!(errno, libc::ESRCH); // The parent no longer exists.
-            false
-        }
-    }
+    use util::send_signal_to_proc;
 
     // Prevent signals sent to the parent process's group from also affecting us as a child
     // process.  E.g. we don't want ^C (SIGINT) or ^\ (SIGQUIT) done from the terminal to the
