@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+set -o nounset -o errexit # -o xtrace  # Old Bash has buggy `errexit` - comment-out for such.
+
+# This runs the tests, examples, and docs-gen with all possibilities of the crate's features.
+
+readonly CARGO_OPTS=${1:-}  # Can give a +toolchain argument, e.g.
+# shellcheck disable=SC2086  # Want word-splitting of `$CARGO_OPTS`.
+function cargo { command cargo $CARGO_OPTS "$@" ;}
+
+
+readonly FEATURES=("premade" "channel_notify_facility")
+FEATURES_COMBOS=()
+function features_combos {
+    local N=$1 PREFIX=${2:-}
+    for I in $(seq "$N" 1 $((${#FEATURES[@]} - 1)) 2> /dev/null); do
+        local X=${PREFIX}${FEATURES[I]}
+        FEATURES_COMBOS+=("$X")
+        features_combos $((I + 1)) "$X,"  # (Note the trailing comma.)
+    done
+}
+features_combos 0
+readonly FEATURES_COMBOS
+# for F in "${FEATURES_COMBOS[@]}"; do echo "$F"; done
+
+
+readonly COMMANDS=(
+    "test --tests"
+    "test --doc"
+    "run --example child_reset_mask"
+    "run --example dedicated_thread"
+    "run --example exercise"
+    "run --example minimal"
+    doc
+)
+
+FAILURES=()
+SUCCESSES=()
+
+function run {
+    local C
+    for C in "${COMMANDS[@]}"; do
+        # shellcheck disable=SC2206  # Want word-splitting.
+        local CMD=(cargo $C "$@")
+        echo "Running: ${CMD[*]}"
+        if quiet_unless_example "${CMD[@]}"; then
+            SUCCESSES+=("${CMD[*]}")
+        else
+            FAILURES+=("${CMD[*]}")
+        fi
+    done
+}
+
+function quiet_unless_example {
+    if [[ "$*" =~ ^cargo\ +run\ +--example\ + ]]; then
+        "$@"
+    else
+        "$@" > /dev/null 2>&1
+    fi
+}
+
+
+OS=$(uname)
+readonly OS
+
+
+echo "On: $OS.  Using: $(cargo --version)."
+
+run  # First, run them with default features.
+
+for F in "${FEATURES_COMBOS[@]}"; do
+    run --no-default-features --features "$F"  # Run with all combinations of features.
+done
+
+run --no-default-features  # Lastly, run with no features.
+
+readonly FAILURES
+
+
+EXPECTED_FAILURES=(
+    # Without the "premade" feature, these examples can't build.
+    "cargo run --example dedicated_thread --no-default-features"
+    "cargo run --example exercise --no-default-features"
+    "cargo run --example minimal --no-default-features"
+)
+readonly EXPECTED_FAILURES
+
+SURPRISE_FAILURES=()
+SURPRISE_SUCCESSES=()
+
+for F in "${FAILURES[@]}"; do
+    IS_SURPRISE=true
+    for E in "${EXPECTED_FAILURES[@]}"; do
+        if [ "$F" = "$E" ]; then
+            IS_SURPRISE=false
+            break
+        fi
+    done
+    if [ "$IS_SURPRISE" = true ]; then
+        SURPRISE_FAILURES+=("$F")
+    fi
+done
+readonly SURPRISE_FAILURES
+
+for E in "${EXPECTED_FAILURES[@]}"; do
+    IS_SURPRISE=false
+    for S in "${SUCCESSES[@]}"; do
+        if [ "$E" = "$S" ]; then
+            IS_SURPRISE=true
+            break
+        fi
+    done
+    if [ "$IS_SURPRISE" = true ]; then
+        SURPRISE_SUCCESSES+=("$E")
+    fi
+done
+readonly SURPRISE_SUCCESSES
+
+if (( ${#SURPRISE_SUCCESSES[@]} >= 1 ))
+then
+    echo
+    echo "SURPRISE SUCCESSES (${#SURPRISE_SUCCESSES[@]}):"
+
+    for S in "${SURPRISE_SUCCESSES[@]}"; do
+        echo "$S"
+    done
+fi
+
+if (( ${#SURPRISE_FAILURES[@]} == 0 ))
+then
+    echo
+    echo "Success - no unexpected failures."
+else
+    echo
+    echo "FAILURES (${#SURPRISE_FAILURES[@]}):"
+
+    for F in "${SURPRISE_FAILURES[@]}"; do
+        echo "$F"
+    done
+
+    exit 1
+fi
