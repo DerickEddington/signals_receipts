@@ -12,7 +12,8 @@ requirement to only do async-signal-safe things).
 
 # Examples
 
-Simple:
+<details>
+<summary>Simple:</summary>
 
 ```rust no_run
 // This defines the `signals_receipts_premade` module.
@@ -32,8 +33,10 @@ fn main() {
     println!("Terminated.");
 }
 ```
+</details>
 
-Higher-level, over channels, managed facility, requires `std`:
+<details>
+<summary>Higher-level, over channels, managed facility, requires <code>std</code>:</summary>
 
 ```rust no_run
 // This defines the `channel_notify_facility_premade` module.
@@ -95,6 +98,7 @@ fn main() {
     SignalsChannel::finish(receiver).unwrap();
 }
 ```
+</details>
 
 # Motivation
 
@@ -138,18 +142,28 @@ involved for this crate.
 
 # Alternative
 
-The [`signal_hook`](https://crates.io/crates/signal-hook) crate provides an impressive degree of
-abilities, for being so limited by async-signal-safety.  Its iterator over incoming signals is
-simple to initialize and use across threads, and using only that is sometimes sufficient.  It can
-provide the extra info of `SA_SIGINFO`.  A reason to not use `signal_hook` is when having its full
-suite of abilities, but mostly unused, would definitely be overkill.  If you're not sure it would
-be overkill, you might want to choose `signal_hook` instead.  But other reasons to use
-`signals_receipts` are that it's `no_std` and that it can fully uninstall the signal handlers,
-whereas `signal_hook` isn't (it requires `std`) and can't (it can only emulate uninstalling).
+<details>
+<summary>
+The <a href="https://crates.io/crates/signal-hook"><code>signal_hook</code></a> crate:
+</summary>
+
+It provides an impressive degree of abilities, for being so limited by async-signal-safety.  Its
+iterator over incoming signals is simple to initialize and use across threads, and using only that
+is sometimes sufficient.  It can provide the extra info of <code>SA_SIGINFO</code>.  A reason to
+not use <code>signal_hook</code> is when having its full suite of abilities, but mostly unused,
+would definitely be overkill.  If you're not sure it would be overkill, you might want to choose
+<code>signal_hook</code> instead.  But other reasons to use <code>signals_receipts</code> are that
+it's <code>no_std</code> and that it can fully uninstall the signal handlers, whereas
+<code>signal_hook</code> isn't (it requires <code>std</code>) and can't (it can only emulate
+uninstalling).
+</details>
 
 # Portability
 
+<details>
+<summary>
 This crate was confirmed to build and pass its tests and examples on (x86_64 only so far):
+</summary>
 
 - BSD
   - FreeBSD 14.0
@@ -173,3 +187,4 @@ This crate was confirmed to build and pass its tests and examples on (x86_64 onl
 All glibc- or musl-based Linux OSs, and all macOS and Mac OS X versions, should already work.  It
 might already work on further POSIX OSs.  If not, adding support for other POSIX OSs should be
 easy but might require making tweaks to this crate's conditional compilation.
+</details>
