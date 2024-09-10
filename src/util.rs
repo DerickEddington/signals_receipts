@@ -425,6 +425,7 @@ pub(crate) fn abort(msg: &[u8]) -> ! {
 
     ewrite(b"Internal Abort: ");
     ewrite(msg);
+    ewrite(b"\n");
 
     // SAFETY: The call is proper.
     unsafe {
