@@ -1,8 +1,11 @@
 pub use receipts::*;
 mod receipts;
 
+#[cfg(feature = "channel_notify_facility")]
+pub mod channel_notify_facility;
+
 #[doc(hidden)]
-// Not for public use.  This must be `pub` so our macro can refer to it when expanded in other
+// Not for public use.  This must be `pub` so our macros can refer to it when expanded in other
 // crates.
 pub mod __internal;
 
@@ -223,6 +226,7 @@ macro_rules! premade {
             /// This being `pub`lic can also be useful as the `T` with the items of the
             /// `signals_receipts` API that require `T: SignalReceipt<SIGNUM>`.  E.g. with
             /// [`install_handler`] or [`consume_count_then_delegate`].
+            #[derive(Debug)]
             pub(crate) struct SignalsReceipts;
 
             $(

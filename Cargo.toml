@@ -14,6 +14,11 @@ readme = "README.md"
 [features]
 default = ["premade"]
 premade = []
+channel_notify_facility = ["premade"]  # Requires the `std` library.
+
+[[test]]
+name = "channel_notify_facility"
+required-features = ["channel_notify_facility"]
 
 [[test]]
 name = "finish"
@@ -124,6 +129,7 @@ separated_literal_suffix =         "allow"
 single_call_fn =                   "allow"
 single_char_lifetime_names =       "allow"
 shadow_reuse =                     "allow"
+shadow_same =                      "allow"
 
 [lints.rustdoc]
 private_doc_tests =               "warn"

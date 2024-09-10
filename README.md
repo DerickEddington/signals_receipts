@@ -10,7 +10,7 @@ checks all the counters and delegates to your custom processing which is run in 
 (not in the interrupt context of a signal handler, which would be extremely limited by the
 requirement to only do async-signal-safe things).
 
-# Example
+# Examples
 
 Simple:
 
@@ -30,6 +30,69 @@ fn main() {
     let consumer = spawn(SignalsReceipts::consume_loop);
     consumer.join();
     println!("Terminated.");
+}
+```
+
+Higher-level, over channels, managed facility, requires `std`:
+
+```rust no_run
+// This defines the `channel_notify_facility_premade` module.
+signals_receipts::channel_notify_facility! { SIGINT, SIGQUIT, SIGTERM }
+
+fn main() {
+    use crate::channel_notify_facility_premade::SignalsChannel;
+    use signals_receipts::{channel_notify_facility::{
+                               SignalsChannel as _, Receiver},
+                           SignalNumber};
+
+    #[derive(Debug)]
+    enum MySignalRepr {
+        Interrupt,
+        Quit
+    }
+    impl TryFrom<SignalNumber> for MySignalRepr {
+        type Error = &'static str;
+        fn try_from(value: SignalNumber) -> Result<Self, Self::Error> {
+            match value {
+                libc::SIGINT  => Ok(Self::Interrupt),
+                libc::SIGQUIT => Ok(Self::Quit),
+                _ => Err("unrecognized signal")
+            }
+        }
+    }
+
+    // The capacity of the signals-notifications channel.
+    let bound = 10;
+    // This installs the signal handlers and creates the consumer thread.
+    // Delivered signals are converted to `MySignalRepr`.
+    let receiver: Receiver<MySignalRepr, _> =
+        SignalsChannel::install(Some(bound)).unwrap();
+
+    for sig in receiver.as_ref() {
+        match sig {
+            MySignalRepr::Interrupt => println!("Interrupted."),
+            MySignalRepr::Quit => { println!("Quitted."); break; },
+            // If SIGTERM is delivered while having this install, it's not sent
+            // on this channel, because converting it to `MySignalRepr` fails.
+        }
+    }
+
+    // This uninstalls the signal handlers but keeps the consumer thread
+    // as dormant in case re-installing is done later.
+    SignalsChannel::uninstall(receiver).unwrap();
+
+    // This re-installs the signal handlers and reuses the same consumer thread.
+    // Delivered signals are not converted with this choice of type.
+    let receiver: Receiver<SignalNumber, _> =
+        SignalsChannel::install(None).unwrap();
+
+    // (Just a way to wait until termination signal.)  SIGTERM is now sent on
+    // this different channel, because there's no conversion failure.
+    receiver.as_ref().iter().any(|sig_num| libc::SIGTERM == sig_num);
+
+    // This uninstalls and terminates the consumer thread.
+    // (Re-installing could still be done again.)
+    SignalsChannel::finish(receiver).unwrap();
 }
 ```
 
@@ -68,6 +131,10 @@ involved for this crate.
   numbers need to be processed and how to do so, with a premade function to run as a thread
   dedicated to consuming their receipts and dispatching the declared processing, with premade
   defaults for the finer details.
+
+- **channel_notify_facility** - Enables the premade facility that sends over channels
+  notifications of signals and that manages the installing, uninstalling, and internal consumer
+  thread.  Requires the `std` library.
 
 # Alternative
 

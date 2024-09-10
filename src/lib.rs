@@ -1,5 +1,9 @@
-#![doc = include_str!("../README.md")]
+#![cfg_attr(not(all(doctest, not(feature = "channel_notify_facility"))),
+            doc = include_str!("../README.md"))]
+// By default, this crate is no-std, unless the "channel_notify_facility" feature is enabled.
+// Require explicit conditional `use` of non-`core` items.
 #![no_std]
+//
 #[cfg(not(target_family = "unix"))]
 core::compile_error!("Only supported on POSIX.");
 

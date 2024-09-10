@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use signals_receipts::SignalNumber;
+use std::thread;
 
 
 pub(crate) fn raise(signum: SignalNumber) {
@@ -23,3 +24,6 @@ pub(crate) fn send_signal_to_proc(signum: SignalNumber, pid: libc::pid_t) -> boo
         false
     }
 }
+
+
+pub(crate) fn spawn_raise(signum: SignalNumber) { thread::spawn(move || raise(signum)); }

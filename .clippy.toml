@@ -1,1 +1,5 @@
-doc-valid-idents = ["x86_64", "NixOS", "NetBSD", "OpenBSD", "OpenIndiana", ".."]
+doc-valid-idents = [
+    "channel_notify_facility",
+    "x86_64", "NixOS", "NetBSD", "OpenBSD", "OpenIndiana",
+    ".."
+]
