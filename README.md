@@ -12,6 +12,8 @@ requirement to only do async-signal-safe things).
 
 # Example
 
+Simple:
+
 ```rust no_run
 // This defines the `signals_receipts_premade` module.
 signals_receipts::premade! {
@@ -22,9 +24,10 @@ signals_receipts::premade! {
 fn main() {
     use crate::signals_receipts_premade::SignalsReceipts;
     use signals_receipts::Premade as _;
+    use std::thread::spawn;
 
     SignalsReceipts::install_all_handlers();
-    let consumer = std::thread::spawn(SignalsReceipts::consume_loop);
+    let consumer = spawn(SignalsReceipts::consume_loop);
     consumer.join();
     println!("Terminated.");
 }
@@ -32,19 +35,19 @@ fn main() {
 
 # Motivation
 
-This crate is intended for only POSIX OSs, when only counters and only a single delegate per
-signal number are sufficient.  Not for when the extra info provided via `SA_SIGINFO` is needed.
-Not for when multiple delegates per signal number is needed (though, you could make something like
-that with this crate).  Not for supporting Windows.  Having any of those abilities would be too
-involved for this crate.
+Using counters and [POSIX Semaphores](https://crates.io/crates/sem_safe) is a little simpler and
+cleaner than the classic "self-pipe trick", because a counters approach avoids having a pipe which
+would have some limited capacity, and because counters can immediately be incremented even when
+the rest of the processing isn't quite ready yet, and because semaphores are a more natural fit
+for just waking a consumer thread from within a signal handler.
 
-Using [POSIX Semaphores](https://crates.io/crates/sem_safe), which this crate does, is a little
-simpler and cleaner than the classic "self-pipe trick" (which the `signal_hook` crate uses for its
-iterator), for waking a consumer thread from within an extremely-limited signal handler.  (The
-"self-pipe trick" is: `write()` to a pipe is done from a signal handler, and blocking `read()`
-from the other end of the pipe is done from the consumer thread.  That is somewhat messier (due to
-needing to: setup the pipes, close-on-exec, non-blocking writes, and make the ends accessible to
-the threads).)
+This crate's uninstalling of its signal handling fully uninstalls the signal handlers at the
+OS-process level.
+
+These basic abilities of this crate are `no_std`.  This crate exposes as public some of its
+mechanisms, in case they're useful for you to customize your use to be somewhat different than
+this crate's premade macros' choices.  It's possible to not have a consumer thread and to instead
+check the counters and/or semaphore manually wherever and whenever you want.
 
 The other classic approach of using `sigwait` (or one of its variants) from a consumer thread, to
 avoid async-signal handlers altogether, is sometimes too undesirable because of its requirement to
@@ -53,8 +56,11 @@ mask all signals in all threads which interferes with the signal masks of all su
 their programs, unless carefully reset for each).  This crate is suitable for when that approach
 is not done, i.e. for when async-signal handlers are used.
 
-This crate exposes as public some of its mechanisms, in case they're useful for you to customize
-your use to be somewhat different than this crate's `premade` macro's choices.
+This crate is intended for only POSIX OSs, when only counters and only a single delegate per
+signal number are sufficient.  Not for when the extra info provided via `SA_SIGINFO` is needed.
+Not for when multiple delegates per signal number is needed (though, you could make something like
+that with this crate).  Not for supporting Windows.  Having any of those abilities would be too
+involved for this crate.
 
 # Alternative
 
@@ -63,9 +69,9 @@ abilities, for being so limited by async-signal-safety.  Its iterator over incom
 simple to initialize and use across threads, and using only that is sometimes sufficient.  It can
 provide the extra info of `SA_SIGINFO`.  A reason to not use `signal_hook` is when having its full
 suite of abilities, but mostly unused, would definitely be overkill.  If you're not sure it would
-be overkill, you might want to choose `signal_hook` instead.  But another reason to use
-`signals_receipts` is that it can fully uninstall the signal handlers, whereas `signal_hook` can't
-do that (it can only emulate that mostly).
+be overkill, you might want to choose `signal_hook` instead.  But other reasons to use
+`signals_receipts` are that it's `no_std` and that it can fully uninstall the signal handlers,
+whereas `signal_hook` isn't (it requires `std`) and can't (it can only emulate uninstalling).
 
 # Portability
 
