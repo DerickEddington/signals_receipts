@@ -62,6 +62,13 @@ Not for when multiple delegates per signal number is needed (though, you could m
 that with this crate).  Not for supporting Windows.  Having any of those abilities would be too
 involved for this crate.
 
+# Crate Features
+
+- **premade** (on by default) - Enables the premade pattern of statically declaring which signal
+  numbers need to be processed and how to do so, with a premade function to run as a thread
+  dedicated to consuming their receipts and dispatching the declared processing, with premade
+  defaults for the finer details.
+
 # Alternative
 
 The [`signal_hook`](https://crates.io/crates/signal-hook) crate provides an impressive degree of

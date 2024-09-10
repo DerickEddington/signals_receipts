@@ -7,8 +7,10 @@ core::compile_error!("Only supported on POSIX.");
 pub use atomics::*;
 mod atomics;
 
-pub use premade::*;
-mod premade;
+cfg_if::cfg_if! { if #[cfg(feature = "premade")] {
+    pub use premade::*;
+    mod premade;
+} }
 
 /// Helpers that are sometimes useful when using this crate.
 pub mod util;
