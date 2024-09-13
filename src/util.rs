@@ -322,11 +322,13 @@ unsafe fn sigset_all_usual(set: *mut libc::sigset_t) {
             // SIGEMT is present in these OSs, for all CPU architectures it seems.
             target_os = "freebsd", target_os = "netbsd", target_os = "openbsd",
             target_os = "illumos", target_os = "macos",
-            // SIGEMT is not present for Linux x86.
-            not(all(target_os = "linux", any(target_arch = "x86", target_arch = "x86_64")))
+            // SIGEMT is present in Linux for only a few CPU architectures it seems.
+            all(target_os = "linux", any(target_arch = "sparc", target_arch = "sparc64",
+                                         target_arch = "mips", target_arch = "mips64")),
             // For all other OSs or architectures, which this crate currently doesn't have support
             // for yet, assume SIGEMT is present, so if it's not then this will error and this
             // `cfg` can be adjusted for that platform's lack of it.
+            not(target_os = "linux")
         ))]
         libc::SIGEMT,
         // These cannot be "blocked" anyway, and attempting to do so would be ignored and they'd
