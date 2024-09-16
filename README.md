@@ -102,14 +102,12 @@ fn main() {
 
 # Motivation
 
-Using counters and [POSIX Semaphores](https://crates.io/crates/sem_safe) is a little simpler and
-cleaner than the classic "self-pipe trick", because a counters approach avoids having a pipe which
-would have some limited capacity, and because counters can immediately be incremented even when
-the rest of the processing isn't quite ready yet, and because semaphores are a more natural fit
-for just waking a consumer thread from within a signal handler.
-
-This crate's uninstalling of its signal handling fully uninstalls the signal handlers at the
-OS-process level.
+Using [POSIX Semaphores](https://crates.io/crates/sem_safe) is a little simpler and cleaner than
+the classic "self-pipe trick", because semaphores avoid having pipes and are a more natural fit
+for just waking a consumer thread from within a signal handler.  Using counters enables
+immediately incrementing them even when the rest of the processing isn't quite ready yet but can
+process them later.  This crate's uninstalling of its signal handling fully uninstalls the signal
+handlers at the OS-process level.
 
 These basic abilities of this crate are `no_std`.  This crate exposes as public some of its
 mechanisms, in case they're useful for you to customize your use to be somewhat different than
