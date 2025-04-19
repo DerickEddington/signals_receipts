@@ -20,7 +20,7 @@ fn main() {
         SIGINT => |_| {
             use std::io::{stdout, Write as _};
             print!(".");
-            stdout().flush().ok();
+            stdout().flush().unwrap();
         };
         SIGQUIT => |control| control.break_loop();
     }

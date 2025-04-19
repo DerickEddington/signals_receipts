@@ -10,6 +10,7 @@
     clippy::std_instead_of_core,
     clippy::panic,
     clippy::unwrap_used,
+    clippy::zombie_processes,
     unused_crate_dependencies // Ignore the lib crate's deps that are supplied here also.
 )]
 
@@ -91,7 +92,7 @@ fn parent(exec_filename: &str) {
         }
     }
     .unwrap_or_else(|e| {
-        child.kill().ok();
+        child.kill().unwrap();
         panic!("{e}");
     });
 

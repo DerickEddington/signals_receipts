@@ -1,3 +1,5 @@
+//! Test using the premade approach.
+
 #![cfg(test)] // Suppress `clippy::tests_outside_test_module`.
 #![allow(
     clippy::missing_assert_message,

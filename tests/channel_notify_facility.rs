@@ -1,3 +1,5 @@
+//! Test using the channel-notification facility.
+
 #![cfg(test)] // Suppress `clippy::tests_outside_test_module`.
 #![allow(
     clippy::assertions_on_result_states,

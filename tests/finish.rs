@@ -1,3 +1,5 @@
+//! Test making the consuming thread finish.
+
 #![cfg(test)] // Suppress `clippy::tests_outside_test_module`.
 #![allow(
     clippy::unreachable,

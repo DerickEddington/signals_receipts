@@ -1,3 +1,5 @@
+//! Test re-installing signal handling after having finished it.
+
 #![cfg(test)] // Suppress `clippy::tests_outside_test_module`.
 #![allow(
     clippy::arithmetic_side_effects,

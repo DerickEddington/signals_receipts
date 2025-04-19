@@ -1,3 +1,5 @@
+//! Test having two instances of the premade parts.
+
 #![cfg(test)] // Suppress `clippy::tests_outside_test_module`.
 #![allow(
     clippy::print_stdout,

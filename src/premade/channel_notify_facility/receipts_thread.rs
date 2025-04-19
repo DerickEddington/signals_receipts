@@ -198,9 +198,11 @@ impl<C: SignalsChannel, R: SignalsReceipts> ReceiptsThread<C, R> {
         // Disconnect the controller channel, to ensure the thread wakes (because it could be
         // blocked on this channel now), to see that it must finish.
         drop(self.controller);
-        // Wait for the thread to finish, only after having dropped our controller.  (It's
-        // unnecessary, here, to deal with the possibility that the thread panicked.)
-        self.join_handle.join().ok();
+        // Wait for the thread to finish, only after having dropped our controller.
+        let join_result = self.join_handle.join();
+        // (It's unnecessary, for the `finish` operation, to deal with the possibility that the
+        // thread panicked.)
+        drop(join_result);
     }
 
     /// Send, on the `notify` channel, notification of receipt of a signal.  This is the delegate
@@ -238,7 +240,7 @@ impl<C: SignalsChannel, R: SignalsReceipts> ReceiptsThread<C, R> {
         // `crate::handler` will still run when a signal is delivered and will still increment
         // their counters), and so the processing of further signals will still be done after we
         // wake up when the channel is ready.
-        notify.send(receipt.sig_num).ok();
+        let _send_result = notify.send(receipt.sig_num);
         // If the send fails (because the channel either: is disconnected, is full and chooses to
         // not block, or chooses to ignore this signal number), we just ignore that.
     }
