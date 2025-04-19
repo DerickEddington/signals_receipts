@@ -296,12 +296,12 @@ macro_rules! premade {
                     let sem = <Self as Premade>::semaphore();
                     let try_init_limit = 200_000_000; // Enough for at least a second.
                     let mut consumers = [ $(
-                        &mut repeat_for!($callback: delegates::callback::__FUNC)
+                        &mut repeat_for!($callback: delegates::callback::FUNC)
                             as &mut Consumer<Self::Break, Self::Continue>,
                     )? $(
                         &mut (|state| consume_count_then_delegate::<
                               {signals_names::$signum}, Self, _, Self::Break, Self::Continue>(
-                                  state, delegates::$signum::__FUNC))
+                                  state, delegates::$signum::FUNC))
                             as &mut Consumer<Self::Break, Self::Continue>
                     ),+ ];
                     let continue_flag = <Self as Premade>::continue_flag();
@@ -333,7 +333,7 @@ macro_rules! premade {
                     pub(super) mod callback {
                         use super::*; // Import any items given above.
 
-                        pub(in super::super) const __FUNC:
+                        pub(in super::super) const FUNC:
                           fn(<super::super::SignalsReceipts as $crate::Premade>::Continue)
                             -> core::ops::ControlFlow<
                                  <super::super::SignalsReceipts as $crate::Premade>::Break,
@@ -345,7 +345,7 @@ macro_rules! premade {
                     pub(super) mod $signum {
                         use super::*; // Import any items given above.
 
-                        pub(in super::super) const __FUNC:
+                        pub(in super::super) const FUNC:
                           fn(&mut $crate::Receipt<u64,
                                     <super::super::SignalsReceipts as $crate::Premade>::Break,
                                     <super::super::SignalsReceipts as $crate::Premade>::Continue>)
