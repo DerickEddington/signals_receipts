@@ -152,7 +152,27 @@ pub trait Premade: Sealed {
 ///
 /// The name of the module defaults to `signals_receipts_premade` when not given.
 ///
+/// The optional `$item` forms enable giving `use` imports and/or other kinds of Rust-language
+/// Items that are needed to be in-scope for the delegates and callback.
+///
 /// The `Continue` and `Break` types default to `()` when not given.
+///
+/// The optional `$callback` expression enables having processing that is unconditionally called
+/// in every iteration of the loop, before any of the delegates are called.  This can be used in
+/// various ways similar to a delegate and is passed the same state value as the delegates and so
+/// a callback can modify that to affect the delegates and/or can examine that state (which can be
+/// modified by the delegates).
+///
+/// The order of your `$delegate` expressions determines the order of your delegates' execution in
+/// a single iteration of the consuming loop.  This can be used to have a signal-number's delegate
+/// be called before another's (when both signal numbers have been delivered), but only when
+/// multiple delegates will be called in a single iteration.  It's often possible that signals are
+/// delivered with such timing that their delegates are called across multiple iterations, in
+/// which cases the order the delegates are called probably won't correspond to the order of the
+/// `$delegate` expressions.  So, this ordering is of rather limited use.  It's allowed for any of
+/// the delegates or the callback to block the consuming thread, which can be used to wait while
+/// additional signals are delivered, and then when resuming the thread the order of the delegates
+/// can be relied on to process a signal number before another.
 #[macro_export]
 macro_rules! premade {
     {

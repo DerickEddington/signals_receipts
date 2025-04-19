@@ -38,7 +38,8 @@ pub trait Sender: Send + Debug + 'static {
     /// doesn't mask (block) signals).
     ///
     /// # Errors
-    /// If the receiving end of the channel is disconnected.
+    /// If the receiving end of the channel is disconnected; or if the channel is full and
+    /// non-blocking; or if the impl chooses to ignore the send.
     fn send(&self, sig_num: SignalNumber) -> Result<(), SendError>;
 }
 
