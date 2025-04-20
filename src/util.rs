@@ -406,17 +406,36 @@ pub(crate) fn abort(msg: &[u8]) -> ! {
     fn ewrite(msg: &[u8]) {
         use core::{ffi::c_void, hint};
         const LIMIT: u16 = 10;
-        let msg_buf: *const [u8] = msg;
-        let msg_buf: *const c_void = msg_buf.cast();
+        let mut msg_buf: *const c_void = msg.as_ptr().cast();
         let mut remaining = msg.len();
         for _ in 0 .. LIMIT {
             if remaining >= 1 {
-                // SAFETY: The arguments are proper, because `msg` is a safe type and `remaining`
-                // is correct.
+                // SAFETY: The arguments are proper, because `msg_buf`, as it advances, stays
+                // in-bounds of `msg` which is a safe type, and because `remaining` is positive
+                // and, as it decreases, stays in-bounds of `msg_buf` (as that advances).
                 let r = unsafe { libc::write(libc::STDERR_FILENO, msg_buf, remaining) };
-                match usize::try_from(r) {
-                    Ok(written) => remaining = remaining.saturating_sub(written),
-                    Err(_) => break, // `r == -1`, failure to write.
+                if let Ok(written) = usize::try_from(r) {
+                    // SAFETY: `msg_buf` is derived from the "allocated object" `msg`.  `written`
+                    // is in-bounds of that "allocated object", because `libc::write()` never
+                    // returns a number greater than the count given to it and we've ensured that
+                    // `remaining` is in-bounds.
+                    msg_buf = unsafe { msg_buf.byte_add(written) };
+                    remaining = remaining.saturating_sub(written);
+                } else {
+                    // `r == -1`, failure to write.
+                    let errno = errno::errno().0;
+                    match errno {
+                        #![allow(clippy::match_same_arms, unreachable_patterns)]
+                        libc::EINTR => {
+                            // The write operation was terminated due to the receipt of a signal,
+                            // and no data was transferred.  Try again.
+                        },
+                        libc::EAGAIN | libc::EWOULDBLOCK => {
+                            // Various cases of: The thread would be delayed in the write
+                            // operation.  No data was transferred.  Try again.
+                        },
+                        _ => break, // Hard error. Retrying shouldn't be done.
+                    }
                 }
             } else {
                 break;
