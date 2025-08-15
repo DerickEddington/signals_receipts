@@ -33,7 +33,7 @@ mod sigaction {
         if #[cfg(any(
             all(target_os = "linux", any(target_env = "gnu", target_env = "musl")),
             target_os = "freebsd", target_os = "netbsd", target_os = "openbsd",
-            target_os = "illumos", target_os = "macos",
+            target_os = "illumos", target_os = "macos", target_os = "android",
         ))] {
             macro_rules! sa_handler_cfg { ($obj:expr) => { ($obj).sa_sigaction }; }
         }
@@ -328,7 +328,7 @@ unsafe fn sigset_all_usual(set: *mut libc::sigset_t) {
             // For all other OSs or architectures, which this crate currently doesn't have support
             // for yet, assume SIGEMT is present, so if it's not then this will error and this
             // `cfg` can be adjusted for that platform's lack of it.
-            not(target_os = "linux")
+            all(not(target_os = "linux"), not(target_os = "android")),
         ))]
         libc::SIGEMT,
         // These cannot be "blocked" anyway, and attempting to do so would be ignored and they'd
